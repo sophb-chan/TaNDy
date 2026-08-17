@@ -8,7 +8,7 @@ function readBinaries() {
 				.filter(e => e.isFile()).map(file => file.name);
 	const binignoreIndex = binaries.indexOf('.binignore');
 	if (binignoreIndex >= 0)
-		binaries.splice(biignoreIndex, 1);
+		binaries.splice(binignoreIndex, 1);
 
 	let ignore;
 	try {
