@@ -2,13 +2,16 @@
 console.clear();
 const debugMode = false;
 
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+
 const term = require('./term.js');
 const readline = require('readline/promises');
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const minimist = require('./minimist-string');
 
 async function processCommand(command) {
-	const params = minimist(command);
+	const params = minimist.parse(command);
 
 	// Get:
 	//     target binary     &  unflagged arguments

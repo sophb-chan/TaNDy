@@ -1,5 +1,8 @@
 {
-  "dependencies": {
-    "minimist": "^1.2.8"
-  }
+	"name": "TaNDy",
+	"version": "1.0.4",
+	"dependencies": {
+		"minimist": "^1.2.8"
+	},
+	"type": "module"
 }

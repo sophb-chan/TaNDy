@@ -1,4 +1,4 @@
-const minimist = require('minimist');
+import minimist from 'minimist';
 
 function parse(str, options) {
 	if (typeof str !== 'string') {
@@ -16,4 +16,5 @@ function parse(str, options) {
 	return minimist(cleanArgs, options);
 }
 
-module.exports = parse;
+export default parse;
+export { parse };

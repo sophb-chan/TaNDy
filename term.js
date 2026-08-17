@@ -4,6 +4,7 @@ import path from 'node:path';
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 const commands = [], binaries = commands;
 const binDir = './bin', binIgnore = '.binignore';
+const validBinExtensions = ['', '.js', '.mjs', '.cjs', '.tandy', '.tandyjs', '.tjs'];
 function readBinaries() {
 	// Read binaries
 	const binaries = fs.readdirSync(path.join(import.meta.dirname, binDir), { withFileTypes: true })
@@ -35,27 +36,26 @@ function readBinaries() {
 		binaries.splice(index, 1);
 	});
 
-	// Get binaries without extensions (and filter for invalid/unrecognized extensions)
-	const validExtensions = ['', '.js', '.mjs', '.cjs', '.tandy', '.tandyjs', '.tjs'];
-	const extensionlessBinaries = binaries.map(bin => {
-		const absPath = path.join(import.meta.dirname, binDir, bin);
-		const extension = path.extname(absPath);
-		const name = path.parse(absPath).name;
-		return [name, extension];
-	}).filter(([n, x]) => validExtensions.includes(x)).map(([n, x]) => n);
-
 	commands.length = 0;
-	commands.push(...extensionlessBinaries);
-	return extensionlessBinaries;
+	commands.push(...binaries);
+	return binaries;
 }
 async function getHandler(name) {
 	if (commands.length === 0) readBinaries();
 	if (commands.length === 0)
 		throw new Error('No binaries exist.');
-	if (!commands.includes(name))
+
+	const targetBinIndex = binaries.findIndex(bin => {
+		const absPath = path.join(import.meta.dirname, binDir, bin);
+		const extension = path.extname(absPath);
+		const binName = path.parse(absPath).name;
+		return validBinExtensions.includes(extension) && binName === name;
+	}), targetBinFile = binaries[targetBinIndex];
+
+	if (!commands.includes(targetBinFile))
 		throw new ReferenceError(`The binary "${name}" does not exist.`);
 
-	const importPath = path.join(import.meta.dirname, binDir, name);
+	const importPath = path.join(import.meta.dirname, binDir, targetBinFile);
 	const handler = await import(importPath);
 	const handle = handler?.default ?? handler?.handle;
 	if (handle == null)
@@ -64,9 +64,16 @@ async function getHandler(name) {
 }
 async function runBinary(name, params, flags) {
 	const handler = await getHandler(name);
+
+	const extensionlessBinaries = binaries.map(bin => {
+		const absPath = path.join(import.meta.dirname, binDir, bin);
+		return path.parse(absPath).name;
+	});
+
 	const input = {
 		args: [name, ...params],
-		binaries,
+		binaries: extensionlessBinaries,
+		rawBinaries: binaries,
 		flags,
 	}
 	if (handler instanceof AsyncFunction) {
