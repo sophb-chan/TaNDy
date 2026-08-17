@@ -13,6 +13,7 @@ async function processCommand(command) {
 	// Get:
 	//     target binary     &  unflagged arguments
 	const binary = params._[0], args = params._.slice(1);
+	if (binary == null) return;
 
 	// Get flags
 	const modifierFlags = Object.entries(params).filter(p => p[1] === true).map(p => p[0]);
@@ -38,7 +39,7 @@ console.log(`
   |___|  |__| |__||_|  |__||______|   |___|
 
 Welcome to TaNDy! \/\/ GNU AGPL v3.0 @ 2026
-v1.0.2
+v1.0.3
 `);
 
 term.readBinaries();
