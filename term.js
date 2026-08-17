@@ -25,7 +25,7 @@ function readBinaries() {
 	ignore.forEach(i => {
 		const index = binaries.indexOf(i);
 		if (index === -1) return;
-		console.log('Ignored', i)
+		// console.log(`Ignored binary '${i}'`);
 		binaries.splice(index, 1);
 	});
 
