@@ -1,18 +1,23 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 const commands = [], binaries = commands;
-let binDir = './bin';
+const binDir = './bin', binIgnore = '.binignore';
 function readBinaries() {
+	// Read binaries
 	const binaries = fs.readdirSync(path.join(import.meta.dirname, binDir), { withFileTypes: true })
 				.filter(e => e.isFile()).map(file => file.name);
-	const binignoreIndex = binaries.indexOf('.binignore');
+
+	// Remove .binignore from binaries if it's there
+	const binignoreIndex = binaries.indexOf(binIgnore);
 	if (binignoreIndex >= 0)
 		binaries.splice(binignoreIndex, 1);
 
+	// Parse binary ignore list
 	let ignore;
 	try {
-		const content = fs.readFileSync(path.join(import.meta.dirname, binDir, '.binignore'), { encoding: 'utf-8' });
+		const content = fs.readFileSync(path.join(import.meta.dirname, binDir, binIgnore), { encoding: 'utf-8' });
 		try {
 			ignore = JSON.parse(content);
 		} catch {
@@ -22,6 +27,7 @@ function readBinaries() {
 		ignore = [];
 	}
 
+	// Ignore binaries
 	ignore.forEach(i => {
 		const index = binaries.indexOf(i);
 		if (index === -1) return;
@@ -29,9 +35,18 @@ function readBinaries() {
 		binaries.splice(index, 1);
 	});
 
+	// Get binaries without extensions (and filter for invalid/unrecognized extensions)
+	const validExtensions = ['', '.js', '.mjs', '.cjs', '.tandy', '.tandyjs', '.tjs'];
+	const extensionlessBinaries = binaries.map(bin => {
+		const absPath = path.join(import.meta.dirname, binDir, bin);
+		const extension = path.extname(absPath);
+		const name = path.parse(absPath).name;
+		return [name, extension];
+	}).filter(([n, x]) => validExtensions.includes(x)).map(([n, x]) => n);
+
 	commands.length = 0;
-	commands.push(...binaries);
-	return binaries;
+	commands.push(...extensionlessBinaries);
+	return extensionlessBinaries;
 }
 async function getHandler(name) {
 	if (commands.length === 0) readBinaries();
@@ -49,11 +64,18 @@ async function getHandler(name) {
 }
 async function runBinary(name, params, flags) {
 	const handler = await getHandler(name);
-	return handler({
+	const input = {
 		args: [name, ...params],
 		binaries,
 		flags,
-	});
+	}
+	if (handler instanceof AsyncFunction) {
+		// console.log('Used async path');
+		return await handler(input);
+	} else {
+		// console.log('Used sync path');
+		return handler(input);
+	}
 }
 
 export {
@@ -62,5 +84,6 @@ export {
 	runBinary,
 
 	binDir,
-	binaries
+	binIgnore,
+	binaries,
 }

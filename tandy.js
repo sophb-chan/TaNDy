@@ -39,7 +39,7 @@ console.log(`
   |___|  |__| |__||_|  |__||______|   |___|
 
 Welcome to TaNDy! \/\/ GNU AGPL v3.0 @ 2026
-v1.0.3
+v1.0.4
 `);
 
 term.readBinaries();
