@@ -38,7 +38,7 @@ console.log(`
   |___|  |__| |__||_|  |__||______|   |___|
 
 Welcome to TaNDy! \/\/ GNU AGPL v3.0 @ 2026
-v1.0.0
+v1.0.1
 `);
 
 term.readBinaries();
@@ -48,11 +48,11 @@ if (debugMode) console.log("\x1b[1;3;92mDebug mode enabled\x1b[0m");
 
 async function mainLoop() {
 	try {
-		const command = await rl.question(`${process.cwd()}; `);
+		const command = await rl.question(`\n${process.cwd()}; `);
 		const result = await processCommand(command);
 	} catch (err) {
 		if (debugMode) {
-			console.log('[TaNDy] Exception!');
+			console.error('[TaNDy] Exception!');
 			console.error(err);
 		} else {
 			if (err.name != null && err.message != null)

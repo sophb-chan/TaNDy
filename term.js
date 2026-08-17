@@ -4,7 +4,28 @@ import path from 'node:path';
 const commands = [], binaries = commands;
 let binDir = './bin';
 function readBinaries() {
-	const binaries = fs.readdirSync(binDir);
+	const binaries = fs.readdirSync(path.join(import.meta.dirname, binDir), { withFileTypes: true })
+				.filter(e => e.isFile()).map(file => file.name);
+	binaries.splice(binaries.indexOf('.binignore'), 1);
+
+	let ignore;
+	try {
+		const content = fs.readFileSync(path.join(import.meta.dirname, binDir, '.binignore'), { encoding: 'utf-8' });
+		try {
+			ignore = JSON.parse(content);
+		} catch {
+			ignore = content.split(/\r?\n/).filter(Boolean);
+		}
+	} catch {
+		ignore = [];
+	}
+
+	ignore.forEach(i => {
+		const index = binaries.indexOf(i);
+		if (index < 0) return;
+		binaries.splice(index, 1);
+	});
+
 	commands.length = 0;
 	commands.push(...binaries);
 	return binaries;
