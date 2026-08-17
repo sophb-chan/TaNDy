@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Installing dependencies..."
+yes | npm i minimist
+echo "Creating symbolic link..."
+ln -s tandy.js tandy
+echo "Allowing execution..."
+chmod +x tandy
+echo "Done!"
