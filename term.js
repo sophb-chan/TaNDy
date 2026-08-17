@@ -22,7 +22,7 @@ function readBinaries() {
 
 	ignore.forEach(i => {
 		const index = binaries.indexOf(i);
-		if (index < 0) return;
+		if (index === -1) return;
 		binaries.splice(index, 1);
 	});
 
