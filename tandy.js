@@ -5,10 +5,10 @@ const debugMode = false;
 const term = require('./term.js');
 const readline = require('readline/promises');
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const minimist = require('minimist');
+const minimist = require('./minimist-string');
 
 async function processCommand(command) {
-	const params = minimist(command.split(' '));
+	const params = minimist(command);
 
 	// Get:
 	//     target binary     &  unflagged arguments
@@ -38,7 +38,7 @@ console.log(`
   |___|  |__| |__||_|  |__||______|   |___|
 
 Welcome to TaNDy! \/\/ GNU AGPL v3.0 @ 2026
-v1.0.1
+v1.0.2
 `);
 
 term.readBinaries();
