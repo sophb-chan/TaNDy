@@ -6,7 +6,9 @@ let binDir = './bin';
 function readBinaries() {
 	const binaries = fs.readdirSync(path.join(import.meta.dirname, binDir), { withFileTypes: true })
 				.filter(e => e.isFile()).map(file => file.name);
-	binaries.splice(binaries.indexOf('.binignore'), 1);
+	const binignoreIndex = binaries.indexOf('.binignore');
+	if (binignoreIndex >= 0)
+		binaries.splice(biignoreIndex, 1);
 
 	let ignore;
 	try {
@@ -23,6 +25,7 @@ function readBinaries() {
 	ignore.forEach(i => {
 		const index = binaries.indexOf(i);
 		if (index === -1) return;
+		console.log('Ignored', i)
 		binaries.splice(index, 1);
 	});
 
