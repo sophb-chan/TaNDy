@@ -11,28 +11,46 @@ else
 	exit 1
 fi
 
-TANDY_DIR='./tandy'
+echo "Notice: The installer may ask for root permissions at any time, and may ask for your password."
+
+TANDY_DIR='/usr/bin/tandy_install'
 TANDY_URL='https://raw.githubusercontent.com/sophb-chan/TaNDy/main'
 BIN_URL='https://raw.githubusercontent.com/sophb-chan/TaNDy-binaries/main'
 
 if [ ! -d "$TANDY_DIR" ]; then
-	mkdir "$TANDY_DIR"
+	sudo mkdir "$TANDY_DIR"
 fi
 
 echo "Downloading 'tandy'..."
-curl -sSo "$TANDY_DIR"/tandy "$TANDY_URL/tandy.js"
+sudo curl -sSo "$TANDY_DIR/tandy" "$TANDY_URL/tandy.js"
 
 echo "Allowing 'tandy' to be executed..."
-chmod +x "$TANDY_DIR"/tandy
+sudo chmod +x "$TANDY_DIR/tandy"
 
 echo "Installing 'minimist' (dependency, NPM package)..."
-npm i -s minimist --prefix "$TANDY_DIR"
+
+while [ -d "$TEMP_DEPDIR"]; do
+	TEMP_DEPDIR="./temp$((RANDOM % 100000000))" # different behavior in zsh(?)
+
+	[ -d "$TEMP_DEPDIR" ] && break;
+done
+mkdir "$TEMP_DEPDIR"
+
+npm i --quiet minimist --prefix "$TEMP_DEPDIR"
+
+shopt -s dotglob
+if [ ! -d "$TANDY_DIR/node_modules" ]; then;
+	sudo mkdir "$TANDY_DIR/node_modules"
+fi
+
+sudo mv "$TEMP_DEPDIR/*" "$TANDY_DIR/node_modules"
+sudo rm -r "$TEMP_DEPDIR"
 
 echo "Downloading 'term.js' (dependency)..."
-curl -sSo "$TANDY_DIR"/term.js "$TANDY_URL/term.js"
+sudo curl -sSo "$TANDY_DIR/term.js" "$TANDY_URL/term.js"
 
 echo "Creating binaries directory..."
-mkdir "$TANDY_DIR"/bin
+sudo mkdir "$TANDY_DIR/bin"
 
 # install_bin() {
 # 	echo "Installing '$1' (TaNDy binary)..."
@@ -46,6 +64,15 @@ curl -sSo "$TANDY_DIR/bin/fetchbin" "$BIN_URL/fetchbin"
 
 echo "Installing 'help' (TaNDy binary)..."
 curl -sSo "$TANDY_DIR/bin/help" "$BIN_URL/help"
+
+if [ ! -f "$TANDY_DIR/tandy" ]; then
+	echo "Creating system-wide symlink..."
+	ln -s "$TANDY_DIR/tandy" '/usr/local/bin'
+	echo "Created successfully!"
+else
+	echo "Cannot create system-wide symlink: A file at /usr/local/bin/tandy already exists"
+	exit 1
+fi
 
 REAL_TANDY_DIR=$(realpath "$TANDY_DIR")
 echo "TaNDy was successfully installed to $REAL_TANDY_DIR!"
