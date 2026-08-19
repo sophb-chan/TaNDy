@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 echo "=== TaNDy Installer ==="
@@ -13,7 +12,7 @@ fi
 
 echo "Notice: The installer may ask for root permissions at any time, and may ask for your password."
 
-TANDY_DIR='/usr/bin/tandy_install'
+TANDY_DIR='.'
 TANDY_URL='https://raw.githubusercontent.com/sophb-chan/TaNDy/main'
 BIN_URL='https://raw.githubusercontent.com/sophb-chan/TaNDy-binaries/main'
 
@@ -29,50 +28,45 @@ sudo chmod +x "$TANDY_DIR/tandy"
 
 echo "Installing 'minimist' (dependency, NPM package)..."
 
-while [ -d "$TEMP_DEPDIR"]; do
-	TEMP_DEPDIR="./temp$((RANDOM % 100000000))" # different behavior in zsh(?)
+TEMP_DIR="./tandy_temp$((RANDOM % 100000000))"
+mkdir "$TEMP_DIR"
 
-	[ -d "$TEMP_DEPDIR" ] && break;
-done
-mkdir "$TEMP_DEPDIR"
-
-npm i --quiet minimist --prefix "$TEMP_DEPDIR"
+npm i --quiet minimist --prefix "$TEMP_DIR"
 
 shopt -s dotglob
-if [ ! -d "$TANDY_DIR/node_modules" ]; then;
+if [ ! -d "$TANDY_DIR/node_modules" ]; then
 	sudo mkdir "$TANDY_DIR/node_modules"
 fi
 
-sudo mv "$TEMP_DEPDIR/*" "$TANDY_DIR/node_modules"
-sudo rm -r "$TEMP_DEPDIR"
+sudo mv "$TEMP_DIR/node_modules"/* "$TANDY_DIR/node_modules"
+sudo rm -r "$TEMP_DIR"
 
 echo "Downloading 'term.js' (dependency)..."
 sudo curl -sSo "$TANDY_DIR/term.js" "$TANDY_URL/term.js"
 
+echo "Downloading 'minimist-string.js' (dependency)..."
+sudo curl -sSo "$TANDY_DIR/minimist-string.js" "$TANDY_URL/minimist-string.js"
+
 echo "Creating binaries directory..."
 sudo mkdir "$TANDY_DIR/bin"
 
-# install_bin() {
-# 	echo "Installing '$1' (TaNDy binary)..."
-#	curl -sSo "$TANDY_DIR/bin/$1" "$BIN_URL/$1"
-# }
+install_bin() {
+	echo "Installing '$1' (TaNDy binary)..."
+	sudo curl -sSo "$TANDY_DIR/bin/$1" "$BIN_URL/$1"
+}
 
-# install_bin fetchbin
+install_bin fetchbin.js
+install_bin help.js
 
-echo "Installing 'fetchbin' (TaNDy binary)..."
-curl -sSo "$TANDY_DIR/bin/fetchbin" "$BIN_URL/fetchbin"
 
-echo "Installing 'help' (TaNDy binary)..."
-curl -sSo "$TANDY_DIR/bin/help" "$BIN_URL/help"
-
-if [ ! -f "$TANDY_DIR/tandy" ]; then
-	echo "Creating system-wide symlink..."
-	ln -s "$TANDY_DIR/tandy" '/usr/local/bin'
-	echo "Created successfully!"
-else
-	echo "Cannot create system-wide symlink: A file at /usr/local/bin/tandy already exists"
-	exit 1
-fi
+#if [ ! -f "$TANDY_DIR/tandy" ]; then
+#	echo "Creating system-wide symlink..."
+#	ln -s "$TANDY_DIR/tandy" '/usr/local/bin'
+#	echo "Created successfully!"
+#else
+#	echo "Cannot create system-wide symlink: A file at /usr/local/bin/tandy already exists"
+#	exit 1
+#fi
 
 REAL_TANDY_DIR=$(realpath "$TANDY_DIR")
 echo "TaNDy was successfully installed to $REAL_TANDY_DIR!"
