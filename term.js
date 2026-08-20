@@ -4,7 +4,7 @@ import path from 'node:path';
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 const commands = [], binaries = commands;
 const binDir = './bin', binIgnore = '.binignore';
-const validBinExtensions = ['', '.js', '.mjs', '.cjs', '.tandy', '.tandyjs', '.tjs'];
+const validBinExtensions = ['', '.js', '.mjs', '.cjs', '.tandybin', '.tandyjs', '.tjs'];
 function readBinaries() {
 	// Read binaries
 	const binaries = fs.readdirSync(path.join(import.meta.dirname, binDir), { withFileTypes: true })
