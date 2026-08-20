@@ -70,11 +70,21 @@ async function runBinary(name, params, flags) {
 		return path.parse(absPath).name;
 	});
 
+	const parsedParams = params.map(param => {
+		param = param.replaceAll(/\\u([0-9a-f]{4,})/gi, ($0, $1) => String.fromCharCode(parseInt($1, 16)));
+		param = param.replaceAll(/\\o([0-7]+)/g, ($0, $1) => String.fromCharCode(parseInt($1, 8)));
+		param = param.replaceAll(/\\b([01]+)/g, ($0, $1) => String.fromCharCode(parseInt($1, 2)));
+		param = param.replaceAll(/\\x([0-9a-f]+)/gi, ($0, $1) => String.fromCharCode(parseInt($1, 16)));
+		param = param.replaceAll(/\\ESC|\\e/g, '\x1b');
+		return param;
+	});
 	const input = {
-		args: [name, ...params],
+		args: [name, ...parsedParams],
+		rawArgs: [name, params],
 		binaries: extensionlessBinaries,
 		rawBinaries: binaries,
 		flags,
+		validBinExtensions,
 	}
 	if (handler instanceof AsyncFunction) {
 		// console.log('Used async path');

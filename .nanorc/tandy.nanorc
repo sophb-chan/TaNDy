@@ -1,0 +1,11 @@
+syntax "TaNDy" "\.tandy$"
+
+color brightblue "^\S+.*"
+color brightcyan "^\S+"
+color brightgreen "(-[a-zA-Z0-9]+|--[a-zA-Z0-9-]*)"
+color italic,brightblack "#.*$"
+color bold,italic,brightred,black "^#!.*$"
+color bold,brightcyan "^#!\/usr\/bin\/env -S tandy run$"
+color brightyellow "(".*"|'.*')"
+color bold,orange "\\(.|x[0-9a-fA-F]+|d[0-9]+|o[0-7]+|b[01]+|u[0-9a-fA-F]{4,})"
+color bold,brightcyan "(\\ESC|\\e)"
