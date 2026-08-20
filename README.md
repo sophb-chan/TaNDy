@@ -12,4 +12,4 @@ curl -fsSL https://raw.githubusercontent.com/sophb-chan/TaNDy/main/install.sh | 
 ## Where did the name come from?
 
 The name originated from wordplay with "**Tele**type" (a.k.a. TTY) and Node (from **Node**JS).
-I merged both of those into "Tele-node". Acronymizing, "*T*ele-*n*o*d*e" resulted in "TND", and I addedd the A and Y just to make the name marketable.
+I merged both of those into "Tele-node". Acronymizing, "*T*ele-*n*o*d*e" resulted in "TND", and I added the A and Y just to make the name marketable.
