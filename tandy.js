@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const debugMode = false;
+const forceDebugMode = false;
 
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -12,8 +12,11 @@ const rl = readline.createInterface({ input: process.stdin, output: process.stdo
 const minimist = require('./minimist-string');
 
 // External command handler variables
-const exArgs = process.argv.slice(2);
+const rawExArgs = process.argv.slice(2);
+const parsedExArgs = minimist.parse(rawExArgs.join(' '));
+const flags = Object.fromEntries(Object.entries(parsedExArgs).filter(kv => kv[0] !== '_')), exArgs = parsedExArgs._;
 const tandyCommand = exArgs[0] ?? '';
+const debugMode = forceDebugMode || Boolean(flags.d || flags.debug);
 
 // Utility functions
 function generateMessage(msg, padding = 0) {
@@ -88,9 +91,11 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy v1.1.0! \/\/ GNU AGPL v3.0 @ 2026
+Welcome to TaNDy v1.2.0! \/\/ GNU AGPL v3.0 @ 2026
 `
 	);
+
+	debug("\x1b[1;3;92mDebug mode enabled\x1b[0m");
 
 	term.readBinaries();
 	log('Loaded', term.binaries.length, `binar${term.binaries.length === 1 ? 'y' : 'ies'}`);
