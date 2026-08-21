@@ -83,6 +83,7 @@ async function runBinary(name, params, flags) {
 		rawArgs: [name, params],
 		binaries: extensionlessBinaries,
 		rawBinaries: binaries,
+		tandyDir: import.meta.dirname,
 		flags,
 		validBinExtensions,
 	}
