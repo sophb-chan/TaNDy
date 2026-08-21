@@ -86,6 +86,7 @@ async function runBinary(name, params, flags) {
 		tandyDir: import.meta.dirname,
 		flags,
 		validBinExtensions,
+		reloadBinaries: readBinaries
 	}
 	if (handler instanceof AsyncFunction) {
 		// console.log('Used async path');

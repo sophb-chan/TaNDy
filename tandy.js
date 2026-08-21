@@ -91,7 +91,7 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy v1.2.0! \/\/ GNU AGPL v3.0 @ 2026
+Welcome to TaNDy v1.2.1! \/\/ GNU AGPL v3.0 @ 2026
 `
 	);
 

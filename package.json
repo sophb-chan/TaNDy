@@ -1,6 +1,6 @@
 {
 	"name": "TaNDy",
-	"version": "1.0.4",
+	"version": "1.2.1",
 	"dependencies": {
 		"minimist": "^1.2.8"
 	},
