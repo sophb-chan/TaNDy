@@ -46,7 +46,7 @@ async function getHandler(name) {
 		throw new Error('No binaries exist.');
 
 	const targetBinIndex = binaries.findIndex(bin => {
-		const absPath = path.join(import.meta.dirname, binDir, bin);
+		const absPath = path.join(import.meta.dirname, binDir, bin.split('.').slice(0, -1).join('.'));
 		const extension = path.extname(absPath);
 		const binName = path.parse(absPath).name;
 		return validBinExtensions.includes(extension) && binName === name;
@@ -56,7 +56,10 @@ async function getHandler(name) {
 		throw new ReferenceError(`The binary "${name}" does not exist.`);
 
 	const importPath = path.join(import.meta.dirname, binDir, targetBinFile);
-	const handler = await import(importPath);
+	const code = fs.readFileSync(importPath, { encoding: 'utf-8' }),
+	      B64code = Buffer.from(code).toString('base64');
+	const dataURI = `data:text/javascript;base64,${B64code}`;
+	const handler = await import(dataURI);
 	const handle = handler?.default ?? handler?.handle;
 	if (handle == null)
 		throw new SyntaxError(`The binary "${name}" does not have an addressible handle.`);
