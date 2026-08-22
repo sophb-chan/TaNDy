@@ -74,6 +74,7 @@ async function runBinary(name, params, flags) {
 	});
 
 	const parsedParams = params.map(param => {
+		param = param.replaceAll('\\n', '\n');
 		param = param.replaceAll(/\\u([0-9a-f]{4,})/gi, ($0, $1) => String.fromCharCode(parseInt($1, 16)));
 		param = param.replaceAll(/\\o([0-7]+)/g, ($0, $1) => String.fromCharCode(parseInt($1, 8)));
 		param = param.replaceAll(/\\b([01]+)/g, ($0, $1) => String.fromCharCode(parseInt($1, 2)));

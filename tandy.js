@@ -60,8 +60,21 @@ async function processCommand(command) {
 }
 async function mainLoop() {
         try {
-                const command = await rl.question(`\n${process.cwd()}; `);
-                const result = await processCommand(command);
+		const commandLines = [], rawCommandLines = [];
+		do {
+			const prompt = commandLines.length === 0 ? `\n${process.cwd()};` : `\n${process.cwd()} (${commandLines.length});`;
+			const commandLine = await rl.question(`${prompt} `),
+			      cleanCommandLine = commandLine.endsWith('\\') ? commandLine.slice(0, -1) : commandLine;
+
+			commandLines.push(cleanCommandLine);
+			rawCommandLines.push(commandLine);
+		} while (rawCommandLines.at(-1).endsWith('\\'));
+
+		const results = [];
+		for (const command of commandLines) {
+	                const result = await processCommand(command);
+			results.push(result);
+		}
         } catch (err) {
                 if (debugMode)
                         error('Exception!\n', err);
@@ -72,7 +85,7 @@ async function mainLoop() {
                                 error(`Uncaught RawThrow:`, err);
                 }
         }
-        mainLoop();
+        return mainLoop();
 }
 rl.on('close', () => {
 	log(1, 'Interface closed, exiting');
@@ -91,7 +104,7 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy v1.2.2! \/\/ GNU AGPL v3.0 @ 2026
+Welcome to TaNDy v1.3.0! \/\/ GNU AGPL v3.0 @ 2026
 `
 	);
 
