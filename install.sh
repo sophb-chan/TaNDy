@@ -55,8 +55,8 @@ install_bin() {
 	sudo curl -sSo "$TANDY_DIR/bin/$1" "$BIN_URL/$1"
 }
 
-install_bin fetchbin.js
-install_bin help.js
+install_bin fetchbin.tjs
+install_bin help.tjs
 
 
 #if [ ! -f "$TANDY_DIR/tandy" ]; then
