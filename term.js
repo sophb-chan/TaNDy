@@ -47,7 +47,7 @@ async function getHandler(name) {
 		throw new Error('No binaries exist.');
 
 	const targetBinIndex = binaries.findIndex(bin => {
-		const absPath = path.join(import.meta.dirname, binDir, bin.split('.').slice(0, -1).join('.'));
+		const absPath = path.join(import.meta.dirname, binDir, bin);
 		const extension = path.extname(absPath);
 		const binName = path.parse(absPath).name;
 		return validBinExtensions.includes(extension) && binName === name;
