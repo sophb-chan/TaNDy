@@ -16,7 +16,7 @@ const minimist = require('./minimist-string');
 // External command handler variables
 const rawExArgs = process.argv.slice(2);
 const parsedExArgs = minimist.parse(rawExArgs.join(' '));
-const flags = Object.fromEntries(Object.entries(parsedExArgs).filter(kv => kv[0] !== '_')), exArgs = parsedExArgs._;
+const flags = Object.fromEntries(Object.entries(parsedExArgs).filter(kv => kv[0] !== '_')), exArgs = parsedExArgs._.map(String);
 const tandyCommand = exArgs[0] ?? '';
 const debugMode = forceDebugMode || Boolean(flags.d || flags.debug);
 
@@ -46,6 +46,7 @@ const log = generateLogFunction(console.log),
 async function processCommand(command) {
 	const uncommentedCommand = command.replace(/#.*$/g, '');
 	const params = minimist.parse(uncommentedCommand);
+	params._ = params._.map(String);
 
 	// Get:
 	const binary = params._[0], // Target binary
@@ -112,7 +113,7 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy \x1B[1mv1.4.1\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
+Welcome to TaNDy \x1B[1mv1.4.2\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
 `
 	);
 
@@ -138,7 +139,7 @@ async function handleExternalCommand() {
 			}
 			debug(1, `Reading file...\n`);
 			const code = fs.readFileSync(filename, { encoding: 'utf-8' });
-			const commands = code.split(/\r?\n/).filter(Boolean);
+			const commands = code.split(/\r?\n/).filter(Boolean).map(String);
 			for (const [index, command] of commands.entries()) {
 				try {
 					debug('Executing command (${index + 1} of ${commands.length}):\n\t', command);
