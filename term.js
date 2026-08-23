@@ -66,7 +66,7 @@ async function getHandler(name) {
 		throw new SyntaxError(`The binary "${name}" does not have an addressible handle.`);
 	return handle;
 }
-async function runBinary(name, params, flags) {
+async function runBinary(name, params, flags, rlInterface) {
 	const handler = await getHandler(name);
 
 	const extensionlessBinaries = binaries.map(bin => {
@@ -89,9 +89,10 @@ async function runBinary(name, params, flags) {
 		binaries: extensionlessBinaries,
 		rawBinaries: binaries,
 		tandyDir: import.meta.dirname,
-		flags,
+		flags, flagsObj: flags.obj,
 		validBinExtensions,
-		reloadBinaries: readBinaries
+		reloadBinaries: readBinaries,
+		rlInterface,
 	}
 	if (handler instanceof AsyncFunction) {
 		// console.log('Used async path');

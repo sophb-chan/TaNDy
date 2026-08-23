@@ -58,7 +58,11 @@ async function processCommand(command) {
 	const valueFlags = Object.fromEntries(Object.entries(params).filter(p => typeof p[1] !== 'boolean'));
 	delete valueFlags._;
 
-	const result = await term.runBinary(binary, args, { values: valueFlags, modifiers: modifierFlags });
+	// Get flags object
+	const flagsObj = structuredClone(params);
+	delete flagsObj._;
+
+	const result = await term.runBinary(binary, args, { values: valueFlags, modifiers: modifierFlags, obj: flagsObj }, rl);
 	return result;
 }
 async function mainLoop() {
@@ -108,7 +112,7 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy \x1B[1mv1.3.1\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
+Welcome to TaNDy \x1B[1mv1.4.0\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
 `
 	);
 
