@@ -36,6 +36,7 @@ function readBinaries() {
 		binaries.splice(index, 1);
 	});
 
+	binaries.sort();
 	commands.length = 0;
 	commands.push(...binaries);
 	return binaries;

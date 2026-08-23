@@ -7,7 +7,9 @@ const require = createRequire(import.meta.url);
 // Module imports
 const term = require('./term.js');
 const readline = require('readline/promises');
+const os = require('os');
 const fs = require('fs');
+const path = require('path');
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const minimist = require('./minimist-string');
 
@@ -20,7 +22,7 @@ const debugMode = forceDebugMode || Boolean(flags.d || flags.debug);
 
 // Utility functions
 function generateMessage(msg, padding = 0) {
-	return `${'\n'.repeat(padding)}[TaNDy${tandyCommand ? ': ' + tandyCommand : ''}]: ${msg}`;
+	return `${'\n'.repeat(padding)}\x1B[1;36m[TaNDy${tandyCommand ? ': ' + tandyCommand : ''}]:\x1B[0m ${msg}`;
 }
 function generateLogFunction(logFn) {
 	const log = (...args) => {
@@ -53,16 +55,18 @@ async function processCommand(command) {
 
 	// Get flags
 	const modifierFlags = Object.entries(params).filter(p => p[1] === true).map(p => p[0]);
-	const valueFlags = Object.entries(params).filter(p => typeof p[1] !== 'boolean');
+	const valueFlags = Object.fromEntries(Object.entries(params).filter(p => typeof p[1] !== 'boolean'));
+	delete valueFlags._;
 
 	const result = await term.runBinary(binary, args, { values: valueFlags, modifiers: modifierFlags });
 	return result;
 }
 async function mainLoop() {
         try {
+		const trimmedCWD = process.cwd().startsWith(os.homedir()) ? path.join('~', process.cwd().split(path.sep).slice(1 + 2).join(path.sep)) : process.cwd();
 		const commandLines = [], rawCommandLines = [];
 		do {
-			const prompt = commandLines.length === 0 ? `\n${process.cwd()};` : `\n${process.cwd()} (${commandLines.length});`;
+			const prompt = `\n\x1B[1;32m${os.userInfo().username}\x1B[0m@\x1B[1;34m${trimmedCWD}\x1B[0m${commandLines.length > 0 ? ` (${commandLines.length})` : ''};`;
 			const commandLine = await rl.question(`${prompt} `),
 			      cleanCommandLine = commandLine.endsWith('\\') ? commandLine.slice(0, -1) : commandLine;
 
@@ -80,9 +84,9 @@ async function mainLoop() {
                         error('Exception!\n', err);
                 else {
                         if (err.name != null && err.message != null)
-                                error(`Uncaught ${err.name}: ${err.message}`);
+                                error(`\x1B[1;41mUncaught ${err.name}\x1B[0m: ${err.message}`);
                         else
-                                error(`Uncaught RawThrow:`, err);
+                                error(`\x1B[1;41mUncaught RawThrow\x1B[0m:`, err);
                 }
         }
         return mainLoop();
@@ -104,18 +108,15 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy v1.3.0! \/\/ GNU AGPL v3.0 @ 2026
+Welcome to TaNDy \x1B[1mv1.3.0\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
 `
 	);
 
-	debug("\x1b[1;3;92mDebug mode enabled\x1b[0m");
+	debug("\x1B[1;3;92mDebug mode enabled\x1B[0m");
 
 	term.readBinaries();
-	log('Loaded', term.binaries.length, `binar${term.binaries.length === 1 ? 'y' : 'ies'}`);
+	log(`Loaded \x1B[94m${term.binaries.length}\x1B[0m binar${term.binaries.length === 1 ? 'y' : 'ies'}`);
 }
-
-debug("\x1b[1;3;92mDebug mode enabled\x1b[0m");
-
 
 // External command handling
 async function handleExternalCommand() {
