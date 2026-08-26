@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
-const commands = [], binaries = commands;
+const binaries = [];
 const binDir = path.join(import.meta.dirname, './bin'), binIgnore = '.binignore';
 const validBinExtensions = ['', '.js', '.mjs', '.cjs', '.tandybin', '.tandyjs', '.tjs'];
 function readBinaries() {
@@ -37,13 +37,13 @@ function readBinaries() {
 	});
 
 	binaries.sort();
-	commands.length = 0;
-	commands.push(...binaries);
+	binaries.length = 0;
+	binaries.push(...binaries);
 	return binaries;
 }
 async function getHandler(name) {
-	if (commands.length === 0) readBinaries();
-	if (commands.length === 0)
+	if (binaries.length === 0) readBinaries();
+	if (binaries.length === 0)
 		throw new Error('No binaries exist.');
 
 	const targetBinIndex = binaries.findIndex(bin => {
@@ -53,7 +53,7 @@ async function getHandler(name) {
 		return validBinExtensions.includes(extension) && binName === name;
 	}), targetBinFile = binaries[targetBinIndex];
 
-	if (!commands.includes(targetBinFile))
+	if (!binaries.includes(targetBinFile))
 		throw new ReferenceError(`The binary "${name}" does not exist.`);
 
 	const importPath = path.join(binDir, targetBinFile);
