@@ -8,7 +8,7 @@ const validBinExtensions = ['', '.js', '.mjs', '.cjs', '.tandybin', '.tandyjs', 
 function readBinaries() {
 	// Read binaries
 	const binaries = fs.readdirSync(binDir, { withFileTypes: true })
-				.filter(e => e.isFile()).map(file => file.name);
+		.filter(e => e.isFile()).map(file => file.name);
 
 	// Remove .binignore from binaries if it's there
 	const binignoreIndex = binaries.indexOf(binIgnore);
@@ -20,13 +20,17 @@ function readBinaries() {
 	try {
 		const content = fs.readFileSync(path.join(binDir, binIgnore), { encoding: 'utf-8' });
 		try {
+			// Try to parse as JSON
 			ignore = JSON.parse(content);
 		} catch {
-			ignore = content.split(/\r?\n/).filter(Boolean);
+			// Try to parse as line-separated list
+			ignore = content.split(/\r?\n/).filter(Boolean).map(i => i.trim());
 		}
 	} catch {
 		ignore = [];
 	}
+	if (!Array.isArray(ignore))
+		throw new TypeError(`The binary ignore list must be of the type 'array', not of the type '${Object.typeOf(ignore)}'.`);
 
 	// Ignore binaries
 	ignore.forEach(i => {
@@ -66,7 +70,7 @@ async function getHandler(name) {
 		throw new SyntaxError(`The binary "${name}" does not have an addressible handle.`);
 	return handle;
 }
-async function runBinary(name, params, flags, rlInterface) {
+async function runBinary(name, params, flags, customArgs) {
 	const handler = await getHandler(name);
 
 	const extensionlessBinaries = binaries.map(bin => {
@@ -90,11 +94,11 @@ async function runBinary(name, params, flags, rlInterface) {
 		binaries: extensionlessBinaries,
 		rawBinaries: binaries,
 		tandyDir: import.meta.dirname,
-		flags, flagsObj: flags.obj,
+		flags,
 		validBinExtensions,
 		reloadBinaries: readBinaries,
-		rlInterface,
 		binDir,
+		...customArgs
 	}
 	if (handler instanceof AsyncFunction) {
 		// console.log('Used async path');

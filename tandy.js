@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 const forceDebugMode = false;
 
+// Create require if needed
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
 // Module imports
+const protoplus = require('./protoplus.mjs'); protoplus.expand();
 const term = require('./term.js');
 const readline = require('readline/promises');
 const os = require('os');
@@ -39,8 +41,8 @@ function generateLogFunction(logFn) {
 	return log;
 }
 const log = generateLogFunction(console.log),
-      error = generateLogFunction(console.error),
-      debug = debugMode ? generateLogFunction(console.debug) : () => {/* suppressed */};
+	error = generateLogFunction(console.error),
+	debug = debugMode ? generateLogFunction(console.debug) : () => {/* suppressed */ };
 
 // Command processor
 async function processCommand(command) {
@@ -50,7 +52,7 @@ async function processCommand(command) {
 
 	// Get:
 	const binary = params._[0], // Target binary
-	      args = params._.slice(1); // Unflagged arguments
+		args = params._.slice(1); // Unflagged arguments
 
 	if (binary == null) return; // Skip empty lines
 
@@ -63,17 +65,30 @@ async function processCommand(command) {
 	const flagsObj = structuredClone(params);
 	delete flagsObj._;
 
-	const result = await term.runBinary(binary, args, { values: valueFlags, modifiers: modifierFlags, obj: flagsObj }, rl);
+	const result = await term.runBinary(
+		binary,
+		args,
+		{
+			values: valueFlags,
+			modifiers: modifierFlags,
+			obj: flagsObj,
+		},
+		{
+			rlInterface: rl,
+			debugMode,
+			flagsObj,
+		}
+	);
 	return result;
 }
 async function mainLoop() {
-        try {
+	try {
 		const trimmedCWD = process.cwd().startsWith(os.homedir()) ? path.join('~', process.cwd().split(path.sep).slice(1 + 2).join(path.sep)) : process.cwd();
 		const commandLines = [], rawCommandLines = [];
 		do {
 			const prompt = `\n\x1B[1;32m${os.userInfo().username}\x1B[0m@\x1B[1;34m${trimmedCWD}\x1B[0m${commandLines.length > 0 ? ` (${commandLines.length})` : ''};`;
 			const commandLine = await rl.question(`${prompt} `),
-			      cleanCommandLine = commandLine.endsWith('\\') ? commandLine.slice(0, -1) : commandLine;
+				cleanCommandLine = commandLine.endsWith('\\') ? commandLine.slice(0, -1) : commandLine;
 
 			commandLines.push(cleanCommandLine);
 			rawCommandLines.push(commandLine);
@@ -81,20 +96,20 @@ async function mainLoop() {
 
 		const results = [];
 		for (const command of commandLines) {
-	                const result = await processCommand(command);
+			const result = await processCommand(command);
 			results.push(result);
 		}
-        } catch (err) {
-                if (debugMode)
-                        error('Exception!\n', err);
-                else {
-                        if (err.name != null && err.message != null)
-                                error(`\x1B[1;41mUncaught ${err.name}\x1B[0m: ${err.message}`);
-                        else
-                                error(`\x1B[1;41mUncaught RawThrow\x1B[0m:`, err);
-                }
-        }
-        return mainLoop();
+	} catch (err) {
+		if (debugMode)
+			error('Exception!\n', err);
+		else {
+			if (err.name != null && err.message != null)
+				error(`\x1B[1;41mUncaught ${err.name}\x1B[0m: ${err.message}`);
+			else
+				error(`\x1B[1;41mUncaught RawThrow\x1B[0m:`, err);
+		}
+	}
+	return mainLoop();
 }
 rl.on('close', () => {
 	log(1, 'Interface closed, exiting');
@@ -105,7 +120,7 @@ rl.on('close', () => {
 const printIntro = () => {
 	console.clear();
 	console.log(
-` _______  _______  __    _  ______   __   __
+		` _______  _______  __    _  ______   __   __
 |       ||   _   ||  |  | ||      | |  | |  |
 |_     _||  |_|  ||   |_| ||  _    ||  |_|  |
   |   |  |       ||       || | |   ||       |
@@ -113,7 +128,7 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy \x1B[1mv1.4.2\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
+Welcome to TaNDy \x1B[1mv1.4.3\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
 `
 	);
 
