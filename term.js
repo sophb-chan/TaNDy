@@ -2,48 +2,53 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
-const commands = [], binaries = commands;
+const binaries = [];
 const binDir = path.join(import.meta.dirname, './bin'), binIgnore = '.binignore';
 const validBinExtensions = ['', '.js', '.mjs', '.cjs', '.tandybin', '.tandyjs', '.tjs'];
 function readBinaries() {
 	// Read binaries
-	const binaries = fs.readdirSync(binDir, { withFileTypes: true })
-				.filter(e => e.isFile()).map(file => file.name);
+	const binariesRead = fs.readdirSync(binDir, { withFileTypes: true })
+		.filter(e => e.isFile()).map(file => file.name);
 
 	// Remove .binignore from binaries if it's there
-	const binignoreIndex = binaries.indexOf(binIgnore);
+	const binignoreIndex = binariesRead.indexOf(binIgnore);
 	if (binignoreIndex >= 0)
-		binaries.splice(binignoreIndex, 1);
+		binariesRead.splice(binignoreIndex, 1);
 
 	// Parse binary ignore list
 	let ignore;
 	try {
 		const content = fs.readFileSync(path.join(binDir, binIgnore), { encoding: 'utf-8' });
 		try {
+			// Try to parse as JSON
 			ignore = JSON.parse(content);
 		} catch {
-			ignore = content.split(/\r?\n/).filter(Boolean);
+			// Try to parse as line-separated list
+			ignore = content.split(/\r?\n/).filter(Boolean).map(i => i.trim());
 		}
 	} catch {
 		ignore = [];
 	}
+	if (!Array.isArray(ignore))
+		throw new TypeError(`The binary ignore list must be of the type 'array', not of the type '${Object.typeOf(ignore)}'.`);
 
 	// Ignore binaries
 	ignore.forEach(i => {
-		const index = binaries.indexOf(i);
+		const index = binariesRead.indexOf(i);
 		if (index === -1) return;
 		// console.log(`Ignored binary '${i}'`);
-		binaries.splice(index, 1);
+			binariesRead.splice(index, 1);
 	});
 
-	binaries.sort();
-	commands.length = 0;
-	commands.push(...binaries);
-	return binaries;
+	binariesRead.sort();
+	binaries.length = 0;
+	binaries.push(...binariesRead);
+
+	return binariesRead;
 }
 async function getHandler(name) {
-	if (commands.length === 0) readBinaries();
-	if (commands.length === 0)
+	if (binaries.length === 0) readBinaries();
+	if (binaries.length === 0)
 		throw new Error('No binaries exist.');
 
 	const targetBinIndex = binaries.findIndex(bin => {
@@ -53,7 +58,7 @@ async function getHandler(name) {
 		return validBinExtensions.includes(extension) && binName === name;
 	}), targetBinFile = binaries[targetBinIndex];
 
-	if (!commands.includes(targetBinFile))
+	if (!binaries.includes(targetBinFile))
 		throw new ReferenceError(`The binary "${name}" does not exist.`);
 
 	const importPath = path.join(binDir, targetBinFile);
@@ -66,7 +71,7 @@ async function getHandler(name) {
 		throw new SyntaxError(`The binary "${name}" does not have an addressible handle.`);
 	return handle;
 }
-async function runBinary(name, params, flags, rlInterface) {
+async function runBinary(name, params, flags, customArgs) {
 	const handler = await getHandler(name);
 
 	const extensionlessBinaries = binaries.map(bin => {
@@ -90,11 +95,11 @@ async function runBinary(name, params, flags, rlInterface) {
 		binaries: extensionlessBinaries,
 		rawBinaries: binaries,
 		tandyDir: import.meta.dirname,
-		flags, flagsObj: flags.obj,
+		flags,
 		validBinExtensions,
 		reloadBinaries: readBinaries,
-		rlInterface,
 		binDir,
+		...customArgs
 	}
 	if (handler instanceof AsyncFunction) {
 		// console.log('Used async path');
