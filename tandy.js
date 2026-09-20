@@ -6,7 +6,11 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
 // Module imports
+<<<<<<< HEAD
 const protoplus = require('protoplus').default; protoplus.expand();
+=======
+const protoplus = require('./protoplus.mjs'); protoplus.expand();
+>>>>>>> 8755fa5cede1a38ea8f3092d9dffd72de5357ccd
 const term = require('./term.js');
 const readline = require('readline/promises');
 const os = require('os');
@@ -120,8 +124,12 @@ rl.on('close', () => {
 const printIntro = () => {
 	if (!debugMode) console.clear();
 	console.log(
+<<<<<<< HEAD
 `
  _______  _______  __    _  ______   __   __
+=======
+		` _______  _______  __    _  ______   __   __
+>>>>>>> 8755fa5cede1a38ea8f3092d9dffd72de5357ccd
 |       ||   _   ||  |  | ||      | |  | |  |
 |_     _||  |_|  ||   |_| ||  _    ||  |_|  |
   |   |  |       ||       || | |   ||       |
@@ -129,8 +137,13 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
+<<<<<<< HEAD
 Welcome to TaNDy \x1B[1mv1.4.4\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
 `.slice(1)
+=======
+Welcome to TaNDy \x1B[1mv1.4.3\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
+`
+>>>>>>> 8755fa5cede1a38ea8f3092d9dffd72de5357ccd
 	);
 
 	debug("\x1B[1;3;92mDebug mode enabled\x1B[0m");
