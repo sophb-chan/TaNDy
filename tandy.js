@@ -6,11 +6,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
 // Module imports
-<<<<<<< HEAD
 const protoplus = require('protoplus').default; protoplus.expand();
-=======
-const protoplus = require('./protoplus.mjs'); protoplus.expand();
->>>>>>> 8755fa5cede1a38ea8f3092d9dffd72de5357ccd
 const term = require('./term.js');
 const readline = require('readline/promises');
 const os = require('os');
