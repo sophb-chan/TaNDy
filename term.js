@@ -7,11 +7,7 @@ const binDir = path.join(import.meta.dirname, './bin'), binIgnore = '.binignore'
 const validBinExtensions = ['', '.js', '.mjs', '.cjs', '.tandybin', '.tandyjs', '.tjs'];
 function readBinaries() {
 	// Read binaries
-<<<<<<< HEAD
 	const binariesRead = fs.readdirSync(binDir, { withFileTypes: true })
-=======
-	const binaries = fs.readdirSync(binDir, { withFileTypes: true })
->>>>>>> 8755fa5cede1a38ea8f3092d9dffd72de5357ccd
 		.filter(e => e.isFile()).map(file => file.name);
 
 	// Remove .binignore from binaries if it's there
@@ -44,18 +40,10 @@ function readBinaries() {
 			binariesRead.splice(index, 1);
 	});
 
-<<<<<<< HEAD
 	binariesRead.sort();
 	binaries.length = 0;
 	binaries.push(...binariesRead);
-
 	return binariesRead;
-=======
-	binaries.sort();
-	binaries.length = 0;
-	binaries.push(...binaries);
-	return binaries;
->>>>>>> 8755fa5cede1a38ea8f3092d9dffd72de5357ccd
 }
 async function getHandler(name) {
 	if (binaries.length === 0) readBinaries();

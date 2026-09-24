@@ -129,6 +129,7 @@ const printIntro = () => {
   |___|  |__| |__||_|  |__||______|   |___|
 
 Welcome to TaNDy \x1B[1mv1.4.4\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
+`
 	);
 
 	debug("\x1B[1;3;92mDebug mode enabled\x1B[0m");
