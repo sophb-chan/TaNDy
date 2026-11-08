@@ -33,6 +33,9 @@ mkdir "$TEMP_DIR"
 
 npm i --quiet minimist --prefix "$TEMP_DIR"
 
+echo "Installing 'protoplus (dependency, NPM package)..."
+npm i --quiet protoplus --prefix "$TEMP_DIR"
+
 shopt -s dotglob
 if [ ! -d "$TANDY_DIR/node_modules" ]; then
 	sudo mkdir "$TANDY_DIR/node_modules"

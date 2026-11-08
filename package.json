@@ -1,9 +1,9 @@
 {
 	"name": "TaNDy",
-	"version": "1.2.1",
+	"version": "1.4.4",
 	"dependencies": {
 		"minimist": "^1.2.8",
-		"protoplus": "^1.10.1"
+		"protoplus": "^1.13.0"
 	},
 	"type": "module"
 }
