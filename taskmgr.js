@@ -51,6 +51,9 @@ export class TaskManager {
 			// console.debug(`[Watchdog] Initialized task "${name}"`);
 		}
 	}
+	taskIsRunning(taskName) {
+		return this.#tasks[taskName] != null && this.#tasks[taskName]?.active === true;
+	}
 
 	// State
 	get taskCount() {

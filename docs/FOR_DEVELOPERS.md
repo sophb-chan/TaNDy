@@ -25,7 +25,7 @@ Here is the structure of those arguments:
 	},
 	validBinExtensions: Array, // Valid binary file extensions
 	reloadBinaries: Function, // function to reload the list of installed binaries
-	rlInterface: ReadlineInterface, // The 'readline' interface that TaNDy uses to communicate with the terminal
+	rlInterface: ReadlineInterface|null, // The 'readline' interface that TaNDy uses to communicate with the terminal. This value becomes `null` if the interface has been closed.
 	debugMode: Boolean, // Whether debug mode is enabled (via --debug flag)
 	flagsObj: Object, // The exact same thing as `flags.obj`
 }

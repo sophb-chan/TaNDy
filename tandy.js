@@ -57,6 +57,78 @@ const toExitCode = value => Math.trunc(Math.min(255, Math.max(0, Number(value) |
 // Task manager
 const taskmgr = new TaskManager;
 
+// Readline close handler
+let rlClosed = false, exiting = false;
+rl.on('close', () => {
+	rlClosed = true;
+	if (!taskmgr.taskIsRunning('runbinary')) process.stdout.write('\n');
+	process.kill(process.pid, 'SIGINT');
+});
+// Interrupt handler
+process.on('SIGINT', async () => {
+	if (exiting === true) {
+		process.stdout.write('\n');
+		process.exit(0);
+	}
+	rl.close();
+
+	const taskCount = taskmgr.taskCount;
+	if (taskCount > 0) {
+		exiting = true;
+		log(`Interrupt fired while ${taskCount} task${taskCount === 1 ? ' was' : 's were'} in progress: ${Object.keys(taskmgr.tasks).join(', ')}`);
+		log('Exiting after all tasks are done or 10 seconds pass. (Press Ctrl + C to exit now.)');
+
+		// Timeout check loop
+		const timeoutStart = performance.now(), timeout = 10e3;
+		let notified = false;
+		const finishedTasks = [];
+
+		while (true) {
+			const timePassed = Math.floor(performance.now() - timeoutStart),
+				timeUntilTimeout = timeout - timePassed,
+				secsUntilTimeout = Math.floor(timeUntilTimeout / 1e3),
+				acceptableError = 2,
+				shouldNotify =
+					notified !== secsUntilTimeout
+					&&
+					(
+						(timeUntilTimeout % 1000) <= acceptableError || 1e3 - (timeUntilTimeout % 1000) <= acceptableError
+					);
+
+			// Task finish log
+			const removedTasks = Object.entries(taskmgr.tasks).filter(t => !t[1].active && !finishedTasks.includes(t[0])).map(t => t[0]);
+			if (removedTasks.length > 0) {
+				log(`Task${removedTasks.length === 1 ? '' : 's'} finished: ${removedTasks.join(', ')}`);
+				finishedTasks.push(...removedTasks);
+			}
+
+			// Exit conditions
+			if (taskmgr.taskCount === 0) {
+				log('All tasks finished, exiting.');
+				process.exit(0);
+				break;
+			}
+			if (secsUntilTimeout <= 0) {
+				log('Exiting after 10s timeout.');
+				process.exit(1);
+				break;
+			}
+
+			// Timeout countdown
+			if (secsUntilTimeout <= 5 && secsUntilTimeout > 0 && shouldNotify) {
+				log(`Exiting in ${secsUntilTimeout}...`);
+				notified = secsUntilTimeout;
+			}
+
+			await new Promise(r => setImmediate(r));
+		}
+	} else {
+		exiting = true;
+		log('Interrupt fired; interface closed. Exiting.');
+		process.exit(0);
+	}
+});
+
 // Command processor
 async function processCommand(command) {
 	const uncommentedCommand = command.replace(/#.*$/g, '');
@@ -90,7 +162,7 @@ async function processCommand(command) {
 			obj: flagsObj,
 		},
 		{
-			rlInterface: rl,
+			rlInterface: rlClosed ? null : rl,
 			debugMode,
 			flagsObj,
 			tandyVer: versionNumber,
@@ -104,10 +176,15 @@ async function mainLoop() {
 		const trimmedCWD = process.cwd().startsWith(os.homedir()) ? path.join('~', process.cwd().split(path.sep).slice(1 + 2).join(path.sep)) : process.cwd();
 		const commandLines = [], rawCommandLines = [];
 		do {
-			const prompt = `\n\x1B[1;32m${os.userInfo().username}\x1B[0m@\x1B[1;34m${trimmedCWD}\x1B[0m${commandLines.length > 0 ? ` (${commandLines.length})` : ''};`;
-			const commandLine = await rl.question(`${prompt} `),
-				cleanCommandLine = commandLine.endsWith('\\') ? commandLine.slice(0, -1) : commandLine;
-
+			const prompt =
+				'\n' + // Clearance line
+				`\x1B[1;32m${os.userInfo().username}\x1B[0m` + // Username
+				'@' + // Separator
+				`\x1B[1;34m${trimmedCWD}\x1B[0m` + // Current working directory
+				(commandLines.length > 0 ? ` (${commandLines.length})` : '') + // Line number indicator for multi-line commands
+				';';
+			const commandLine = await rl.question(`${prompt} `);
+			const cleanCommandLine = commandLine.endsWith('\\') ? commandLine.slice(0, -1) : commandLine;
 			commandLines.push(cleanCommandLine);
 			rawCommandLines.push(commandLine);
 		} while (rawCommandLines.at(-1).endsWith('\\'));
@@ -117,28 +194,38 @@ async function mainLoop() {
 			const result = await processCommand(command), exitCode = toExitCode(result);
 			results.push([result, exitCode]);
 		}
-		if (results.some(([r, exit]) => exit !== 0))
-			console.warn('Some commands finished with a non-zero exit code.');
+		if (results.length === 0) return;
+
+		if (results.length > 1) {
+			if (results.some(([result, exitCode]) => exitCode !== 0)) {
+				console.warn('\nSome commands finished with a non-zero exit code.');
+				console.log(
+					'Non-zero exit codes:\n' +
+					results
+						.map(
+							(v, i) => v[1] === 0 ? null : `Exit code for command ${i} ("${commandLines[i]}"): ${v[1]}`
+						)
+						.filter(Boolean)
+						.join('\n')
+				);
+			}
+		} else if (results[0][1] !== 0) {
+			console.warn(`\nThe command finished with a non-zero exit code (${results[0][1]}).`);
+		}
 	} catch (err) {
+		taskmgr.removeTask('runbinary');
 		if (debugMode)
 			error('Exception!\n', err);
 		else {
-			if (err.name != null && err.message != null)
+			if (err.name != null && err.message != null) {
+				if (rlClosed && err.message === 'readline was closed') return;
+				if (err.name === 'AbortError') return;
 				error(`\x1B[1;41mUncaught ${err.name}\x1B[0m: ${err.message}`);
-			else
+			} else
 				error(`\x1B[1;41mUncaught RawThrow\x1B[0m:`, err);
 		}
 	}
 }
-rl.on('close', () => {
-	const taskCount = taskmgr.taskCount;
-	if (taskCount > 0) {
-		console.log(`Interrupted while ${taskCount} task${taskCount === 1 ? ' was' : 's were'} in progress.`);
-	} else {
-		log(1, 'Interface closed, exiting');
-		process.exit(0);
-	}
-});
 
 // Intro
 const printIntro = () => {
@@ -166,7 +253,7 @@ Welcome to ${
 	log(`Loaded \x1B[94m${term.binaries.length}\x1B[0m binar${term.binaries.length === 1 ? 'y' : 'ies'}`);
 }
 
-// External command handling
+// Handle subcommand
 async function handleSubcommand() {
 	debug("Inputted arguments:", exArgs);
 	switch (subcommand) {
@@ -174,6 +261,7 @@ async function handleSubcommand() {
 		case 'new':
 			printIntro();
 			while (true) {
+				if (rlClosed) break;
 				await mainLoop();
 			}
 			break;
