@@ -30,14 +30,14 @@ function readBinaries() {
 		ignore = [];
 	}
 	if (!Array.isArray(ignore))
-		throw new TypeError(`The binary ignore list must be of the type 'array', not of the type '${Object.typeOf(ignore)}'.`);
+		throw new TypeError(`The binary ignore list must be of the type 'array', not '${typeof ignore}'.`);
 
 	// Ignore binaries
 	ignore.forEach(i => {
 		const index = binariesRead.indexOf(i);
 		if (index === -1) return;
 		// console.log(`Ignored binary '${i}'`);
-			binariesRead.splice(index, 1);
+		binariesRead.splice(index, 1);
 	});
 
 	binariesRead.sort();
@@ -55,11 +55,11 @@ async function getHandler(name) {
 		const extension = path.extname(absPath);
 		const binName = path.parse(absPath).name;
 		return validBinExtensions.includes(extension) && binName === name;
-	}), targetBinFile = binaries[targetBinIndex];
-
-	if (!binaries.includes(targetBinFile))
+	});
+	if (targetBinIndex === -1)
 		throw new ReferenceError(`The binary "${name}" does not exist.`);
 
+	const targetBinFile = binaries[targetBinIndex];
 	const importPath = path.join(binDir, targetBinFile);
 	const code = fs.readFileSync(importPath, { encoding: 'utf-8' }),
 	      B64code = Buffer.from(code).toString('base64');
@@ -90,7 +90,7 @@ async function runBinary(name, params, flags, customArgs) {
 	});
 	const input = {
 		args: [name, ...parsedParams],
-		rawArgs: [name, params],
+		rawArgs: [name, ...params],
 		binaries: extensionlessBinaries,
 		rawBinaries: binaries,
 		tandyDir: import.meta.dirname,
@@ -98,8 +98,8 @@ async function runBinary(name, params, flags, customArgs) {
 		validBinExtensions,
 		reloadBinaries: readBinaries,
 		binDir,
-		...customArgs
-	}
+		...customArgs,
+	};
 	if (handler instanceof AsyncFunction) {
 		// console.log('Used async path');
 		return await handler(input);
@@ -117,4 +117,4 @@ export {
 	binDir,
 	binIgnore,
 	binaries,
-}
+};

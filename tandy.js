@@ -1,30 +1,39 @@
 #!/usr/bin/env node
 const forceDebugMode = false;
 
-// Create require if needed
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-
 // Module imports
-const protoplus = require('protoplus').default; protoplus.expand();
-const term = require('./term.js');
-const readline = require('readline/promises');
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
+import * as term from './term.js';
+import * as readline from 'readline/promises';
+import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as minimist from './minimist-string.js';
+import { fileURLToPath } from 'node:url';
+import { TaskManager } from './taskmgr.js';
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const minimist = require('./minimist-string');
+
+// Version number
+const versionNumber = (() => {
+	try {
+		const __dirname = path.dirname(fileURLToPath(import.meta.url));
+		const packageJSON = fs.readFileSync(path.join(__dirname, './package.json'), { encoding: 'utf-8' });
+		const parsed = JSON.parse(packageJSON);
+		return parsed.version;
+	} catch (err) {
+		return null;
+	}
+})();
 
 // External command handler variables
 const rawExArgs = process.argv.slice(2);
 const parsedExArgs = minimist.parse(rawExArgs.join(' '));
 const flags = Object.fromEntries(Object.entries(parsedExArgs).filter(kv => kv[0] !== '_')), exArgs = parsedExArgs._.map(String);
-const tandyCommand = exArgs[0] ?? '';
+const subcommand = exArgs[0] ?? '';
 const debugMode = forceDebugMode || Boolean(flags.d || flags.debug);
 
 // Utility functions
 function generateMessage(msg, padding = 0) {
-	return `${'\n'.repeat(padding)}\x1B[1;36m[TaNDy${tandyCommand ? ': ' + tandyCommand : ''}]:\x1B[0m ${msg}`;
+	return `${'\n'.repeat(padding)}\x1B[1;36m[TaNDy${subcommand ? ': ' + subcommand : ''}]:\x1B[0m ${msg}`;
 }
 function generateLogFunction(logFn) {
 	const log = (...args) => {
@@ -42,7 +51,11 @@ function generateLogFunction(logFn) {
 }
 const log = generateLogFunction(console.log),
 	error = generateLogFunction(console.error),
-	debug = debugMode ? generateLogFunction(console.debug) : () => {/* suppressed */ };
+	debug = debugMode ? generateLogFunction(console.debug) : () => {/* suppressed */};
+const toExitCode = value => Math.trunc(Math.min(255, Math.max(0, Number(value) || 0)));
+
+// Task manager
+const taskmgr = new TaskManager;
 
 // Command processor
 async function processCommand(command) {
@@ -57,7 +70,8 @@ async function processCommand(command) {
 	if (binary == null) return; // Skip empty lines
 
 	// Get flags
-	const modifierFlags = Object.entries(params).filter(p => p[1] === true).map(p => p[0]);
+	const modifierFlags = Object.entries(params).filter(p => typeof p[1] === 'boolean');
+	const legacyModifierFlags = Object.entries(params).filter(p => p[1] === true).map(v => v[0]);
 	const valueFlags = Object.fromEntries(Object.entries(params).filter(p => typeof p[1] !== 'boolean'));
 	delete valueFlags._;
 
@@ -65,20 +79,24 @@ async function processCommand(command) {
 	const flagsObj = structuredClone(params);
 	delete flagsObj._;
 
+	taskmgr.addTask('runbinary');
 	const result = await term.runBinary(
 		binary,
 		args,
 		{
 			values: valueFlags,
-			modifiers: modifierFlags,
+			legacyModifiers: legacyModifierFlags,
+			modifiers: Object.fromEntries(modifierFlags),
 			obj: flagsObj,
 		},
 		{
 			rlInterface: rl,
 			debugMode,
 			flagsObj,
+			tandyVer: versionNumber,
 		}
 	);
+	taskmgr.removeTask('runbinary');
 	return result;
 }
 async function mainLoop() {
@@ -96,9 +114,11 @@ async function mainLoop() {
 
 		const results = [];
 		for (const command of commandLines) {
-			const result = await processCommand(command);
-			results.push(result);
+			const result = await processCommand(command), exitCode = toExitCode(result);
+			results.push([result, exitCode]);
 		}
+		if (results.some(([r, exit]) => exit !== 0))
+			console.warn('Some commands finished with a non-zero exit code.');
 	} catch (err) {
 		if (debugMode)
 			error('Exception!\n', err);
@@ -109,11 +129,15 @@ async function mainLoop() {
 				error(`\x1B[1;41mUncaught RawThrow\x1B[0m:`, err);
 		}
 	}
-	return mainLoop();
 }
 rl.on('close', () => {
-	log(1, 'Interface closed, exiting');
-	process.exit(0);
+	const taskCount = taskmgr.taskCount;
+	if (taskCount > 0) {
+		console.log(`Interrupted while ${taskCount} task${taskCount === 1 ? ' was' : 's were'} in progress.`);
+	} else {
+		log(1, 'Interface closed, exiting');
+		process.exit(0);
+	}
 });
 
 // Intro
@@ -128,7 +152,11 @@ const printIntro = () => {
   |   |  |   _   || | |   ||       |  |   |
   |___|  |__| |__||_|  |__||______|   |___|
 
-Welcome to TaNDy \x1B[1mv1.4.4\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
+Welcome to ${
+	versionNumber == null
+	? '\x1B[1mTaNDy'
+	: `TaNDy \x1B[1mv${versionNumber}`
+}\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
 `
 	);
 
@@ -139,12 +167,16 @@ Welcome to TaNDy \x1B[1mv1.4.4\x1B[0m! \x1B[2m\/\/ GNU AGPL v3.0 @ 2026\x1B[0m
 }
 
 // External command handling
-async function handleExternalCommand() {
+async function handleSubcommand() {
 	debug("Inputted arguments:", exArgs);
-	switch (tandyCommand) {
-		case '': case 'new':
+	switch (subcommand) {
+		case '':
+		case 'new':
 			printIntro();
-			return mainLoop();
+			while (true) {
+				await mainLoop();
+			}
+			break;
 
 		case 'run':
 			const filename = exArgs[1];
@@ -152,33 +184,56 @@ async function handleExternalCommand() {
 				error(1, 'Missing target filename');
 				process.exit(1);
 			}
-			debug(1, `Reading file...\n`);
-			const code = fs.readFileSync(filename, { encoding: 'utf-8' });
-			const commands = code.split(/\r?\n/).filter(Boolean).map(String);
-			for (const [index, command] of commands.entries()) {
-				try {
-					debug('Executing command (${index + 1} of ${commands.length}):\n\t', command);
-					await processCommand(command);
-				} catch (err) {
-					console.error(err);
-					process.exit(1);
-					return err; // Just in case
+			try {
+				debug(1, `Reading file...\n`);
+				taskmgr.addTask('readprg');
+				const code = fs.readFileSync(filename, { encoding: 'utf-8' });
+				taskmgr.removeTask('readprg');
+				const commands = code.split(/\r?\n|\r/).filter(Boolean).map(String);
+				for (const [index, command] of commands.entries()) {
+					debug(`Executing command (${index + 1} of ${commands.length}):\n\t`, command);
+					const result = await processCommand(command), exitCode = toExitCode(result);
+					if (exitCode !== 0) process.exit(exitCode);
 				}
+			} catch (err) {
+				taskmgr.removeTask('readfile');
+				console.error(err);
+				process.exit(1);
 			}
-			process.exit(0);
 			break;
 
 		case 'interpret':
 			const command = exArgs.slice(1).join(' ');
 			debug('Executing command:\n\t', command);
 			try {
-				const exec = await processCommand(command);
-				process.exit(0);
+				const result = await processCommand(command), exitCode = toExitCode(result);
+				process.exit(exitCode);
 			} catch (err) {
 				console.error(err);
 				process.exit(1);
-				return err; // Again, just in case
 			}
+			break;
+
+		case 'help':
+			console.log(
+`
+===== TaNDy - Usage help =====
+
+# Subcommands
+help - Shows this
+run - Run a TaNDy program
+interpret - Interprets a TaNDy command without opening a prompt interface.
+new - Open a new TaNDy session (same thing as not inputting a subcommand)
+
+# Flags
+-d / --debug - Enables helpful debug logs and functionality
+`.trim()
+			);
+			break;
+
+		default:
+			console.error(`Unknown subcommand: "${subcommand}"`);
+			process.exit(1);
 	}
 }
-handleExternalCommand();
+handleSubcommand();

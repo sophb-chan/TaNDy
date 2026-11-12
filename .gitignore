@@ -1,5 +1,5 @@
 /node_modules
 /bin
 /prgs
-publish
 tandy
+*.save
