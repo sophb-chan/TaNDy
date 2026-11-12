@@ -67,7 +67,7 @@ rl.on('close', () => {
 // Interrupt handler
 process.on('SIGINT', async () => {
 	if (exiting === true) {
-		process.stdout.write('\n');
+		log(1, 'Exiting now.');
 		process.exit(0);
 	}
 	rl.close();
